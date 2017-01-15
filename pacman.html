@@ -1,0 +1,280 @@
+<html>
+	<head>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+		 <audio id="start" src="sounds/start.wav" preload="auto"> 
+		 <audio id="move" src="sounds/move.wav" preload="auto">
+		 <audio id="eat" src="sounds/eat.wav" preload="auto">  
+	</head>
+	<body>
+		<script>
+			// Canvas
+			var start = document.getElementById("start");
+			var move = document.getElementById("move");
+			var eat = document.getElementById("eat");
+			start.play();
+			var canvas = document.createElement("canvas");
+			var ctx = canvas.getContext("2d");
+			var foodArr = [];
+			canvas.width = 620;
+			canvas.height = 620;
+			document.body.appendChild(canvas);
+			
+			// Background canvas & image
+			var bgReady = false;
+			var bgImage = new Image();
+			var CBG = $('<canvas/>')[0];
+			CBG.width = 620;
+			CBG.height = 620;
+			var CBGcx = CBG.getContext('2d');
+			bgImage.onload = function () {
+				bgReady = true;
+				CBGcx.drawImage(bgImage, 0, 0, 620, 620);
+			};
+			bgImage.src = "images/background.png";
+			
+			// Pacman image
+			var pacmanReady = false;
+			var pacmanImage = new Image();
+			pacmanImage.onload = function () {
+				pacmanReady = true;
+			};
+			pacmanImage.src = "images/pacmanl.png";
+			
+			// Ghost1 image
+			var ghostReady = false;
+			var ghostImage = new Image();
+			ghostImage.onload = function () {
+				ghostReady = true;
+			};
+			ghostImage.src = "images/ghost.png";
+
+			// Ghost2 image
+			var ghost2Ready = false;
+			var ghost2Image = new Image();
+			ghost2Image.onload = function () {
+				ghost2Ready = true;
+			};
+			ghost2Image.src = "images/ghost2.png";
+			
+			// Food image
+			var foodReady = false;
+			var foodImage = new Image();
+			foodImage.onload = function () {
+				foodReady = true;
+			};
+			foodImage.src= "images/food.png";
+
+			// Game objects
+			var pacman = {
+				x: 0,
+				y: 0
+			};
+			
+			var ghost = {
+				x: 0,
+				y: 0
+			};
+			var ghost2 = {
+				x: 0,
+				y: 0
+			};
+			var Score = 0;
+
+			// Handle keyboard controls
+			var keysDown = {};
+			addEventListener("keydown", function (e) {
+				keysDown[e.keyCode] = true;
+			}, false);
+
+			addEventListener("keyup", function (e) {
+				delete keysDown[e.keyCode];
+			}, false);
+
+			// Function: Reset the game
+			var reset = function () {
+				start.play();
+				pacman.x = canvas.width-110;
+				pacman.y = canvas.width-110; 
+				ghost.x = 40;
+				ghost.y = 30;
+				ghost2.x = canvas.width-100;
+				ghost2.y = 30;
+				var cnt = 0;
+				// Fill array with food objects
+				for(var i = 0; i < 25; i++){
+					foodArr[i]= food = {
+						exist: false,
+						x: 0,
+						y: 0
+					};
+				}
+				// Enable food and set its position
+				for(var r = 0 ; r < 5 ; r++){
+					for(var c = 0; c < 5 ; c++){
+						foodArr[cnt].exist = true;
+						foodArr[cnt].x = 60 + c * 120;
+						foodArr[cnt].y = 60 + r * 120;
+						cnt++;
+					}
+				}
+				foodArr[12].exist=false;
+				foodArr[24].exist=false;
+			};
+
+			var rnd; //Random number 1-4
+			var pDataU, pDataD, pDataL, pDataR;
+			var GDataU, GDataD, GDataL, GDataR;
+			var ghostMoveBack = false;
+			
+			// Sets a random number every 1 second
+			var setRandom = function() {
+				rnd = Math.ceil(Math.random()*4);
+			}
+			setInterval(function(){ setRandom() }, 350);
+
+			// Function: Update game objects
+			var update = function (modifier) {
+				//	counter++;
+					// Pacman reading color
+				pDataU = CBGcx.getImageData(pacman.x, pacman.y, 80, 1);
+				pDataD = CBGcx.getImageData(pacman.x, pacman.y+80, 80, 1);
+				pDataR = CBGcx.getImageData(pacman.x+80, pacman.y, 1, 80);
+				pDataL = CBGcx.getImageData(pacman.x, pacman.y, 1, 80);
+				
+				// Pacman movement					
+				if (38 in keysDown && pDataU.data[4]==0 && pDataU.data[64]==0 && pDataU.data[128]==0 && pDataU.data[192]==0 && pDataU.data[256]==0 && pDataU.data[312]==0){
+						move.play();
+						pacmanImage.src = "images/pacmanu.png";
+						pacman.y--; // Up
+					}
+
+				else if (40 in keysDown && pDataD.data[4]==0 && pDataD.data[64]==0 && pDataD.data[128]==0 && pDataD.data[192]==0 && pDataD.data[256]==0 && pDataD.data[312]==0){
+						move.play();
+						pacmanImage.src = "images/pacmand.png";
+						pacman.y++; // Down
+					}
+
+				else if (37 in keysDown && pDataL.data[4]==0 && pDataL.data[64]==0 && pDataL.data[128]==0 && pDataL.data[192]==0 && pDataL.data[256]==0 && pDataL.data[312]==0){
+						move.play();
+						pacmanImage.src = "images/pacmanl.png";
+						pacman.x --; // Left
+					}
+
+				else if (39 in keysDown && pDataR.data[4]==0 && pDataR.data[64]==0 && pDataR.data[128]==0 && pDataR.data[192]==0 && pDataR.data[256]==0 && pDataR.data[312]==0){
+						move.play();
+						pacmanImage.src = "images/pacmanr.png";
+						pacman.x ++; // Right
+					}
+				
+				// Ghost1 movement
+	            if (ghost.x < 40) ghostMoveBack = true;
+	            if (ghost.x > canvas.width - 100) ghostMoveBack = false;
+	            if (ghostMoveBack)	ghost.x ++;
+	            else	ghost.x --;
+	            
+	            // Ghost2 reading color
+				GDataU = CBGcx.getImageData(ghost2.x, ghost2.y-15, 60, 1);
+				GDataD = CBGcx.getImageData(ghost2.x, ghost2.y+95, 60, 1);
+				GDataR = CBGcx.getImageData(ghost2.x+85, ghost2.y, 1, 80);
+				GDataL = CBGcx.getImageData(ghost2.x-25, ghost2.y, 1, 80);
+	            	
+	            // Ghost2 random movement
+	            if(rnd==1){// Up
+	            	if(GDataU.data[4]==0 && GDataU.data[48]==0 && GDataU.data[96]==0 && GDataU.data[144]==0 && GDataU.data[192]==0 && GDataU.data[236]==0)
+							ghost2.y--;
+				}
+
+	            else if(rnd==2){// Down
+					if(GDataD.data[4]==0 && GDataD.data[48]==0 && GDataD.data[96]==0 && GDataD.data[144]==0 && GDataD.data[192]==0 && GDataD.data[236]==0)
+							ghost2.y++;
+				}
+
+	            else if (rnd == 3){ // left
+	            	if(GDataL.data[4]==0 && GDataL.data[64]==0 && GDataL.data[128]==0 && GDataL.data[192]==0 && GDataL.data[256]==0 && GDataL.data[312]==0)
+							ghost2.x--;
+				}
+
+	            else if(rnd == 4){// Right
+	            	if(GDataR.data[4]==0 && GDataR.data[64]==0 && GDataR.data[128]==0 && GDataR.data[192]==0 && GDataR.data[256]==0 && GDataR.data[312]==0)
+							ghost2.x++;
+				}
+
+				if(Score==23){
+					Score=0;
+					reset();
+				}
+
+				// Objects collision
+				if(pacman.x <= (ghost.x + 75) && ghost.x <= (pacman.x + 75)&& pacman.y <= (ghost.y + 75) && ghost.y <= (pacman.y +75) ){
+					Score=0;
+					reset();
+				}
+				if(pacman.x <= (ghost2.x + 75) && ghost2.x <= (pacman.x + 75) && pacman.y <= (ghost2.y + 75) && ghost2.y <= (pacman.y + 75) ){
+					Score=0;
+					reset();
+				}
+				for(var i=0; i<foodArr.length; i++){
+					if (pacman.x <= (foodArr[i].x + 30) && foodArr[i].x <= (pacman.x + 80) && pacman.y <= (foodArr[i].y + 30) && foodArr[i].y <= (pacman.y + 80)){
+						if(foodArr[i].exist){
+							eat.play();
+							foodArr[i].exist = false;
+							Score++;
+						}
+					}
+				}
+			};
+			
+			// Draw everything
+			var render = function () {
+				if (bgReady) {
+					ctx.drawImage(bgImage, 0, 0);
+				}
+
+				for(var i=0;i<foodArr.length;i++){
+					if (foodReady) {
+						if(foodArr[i].exist)
+							ctx.drawImage(foodImage, foodArr[i].x, foodArr[i].y);
+					}
+				}
+
+				if (pacmanReady) {
+					ctx.drawImage(pacmanImage, pacman.x, pacman.y);
+				}
+
+				if (ghostReady) {
+					ctx.drawImage(ghostImage, ghost.x, ghost.y);
+				}
+
+				if (ghost2Ready) {
+					ctx.drawImage(ghost2Image, ghost2.x, ghost2.y);
+				}
+				
+
+				// Score
+				ctx.fillStyle = "rgb(250, 250, 250)";
+				ctx.font = "14px Helvetica";
+				ctx.textAlign = "left";
+				ctx.textBaseline = "top";
+				ctx.fillText("Score: " + Score, 25, 601);
+				ctx.fillText("X: " + pacman.x.toFixed(1), 25, 3);
+				ctx.fillText("Y: " + pacman.y.toFixed(1), canvas.width - 75, 3);
+			};
+
+			var main = function () {
+				update(50);
+				update(50);
+				update(50);
+				update(50);
+				update(50);
+				update(50);
+				render();
+				requestAnimationFrame(main);
+			};
+
+			var w = window;
+			requestAnimationFrame = w.requestAnimationFrame || w.webkitRequestAnimationFrame || w.msRequestAnimationFrame || w.mozRequestAnimationFrame;
+			reset();
+			main();
+		</script>
+	</body>
+</html>
